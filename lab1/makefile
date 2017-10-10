@@ -1,5 +1,5 @@
 CFLAGS = -g -Wall -Wstrict-prototypes
-PROGS = make-list print-list serial-add-list
+PROGS = make-list print-list serial-add-list parallel-add-list
 LDFLAGS = -lm
 CC = gcc
 MCC = mpicc
