@@ -1,0 +1,49 @@
+/usr/share/Modules/init/sh: line 2: unalias: extract_features: not found
+/usr/share/Modules/init/sh: line 2: unalias: pip: not found
+/usr/share/Modules/init/sh: line 2: unalias: ipython: not found
+/usr/share/Modules/init/sh: line 2: unalias: finetune_net: not found
+/usr/share/Modules/init/sh: line 2: unalias: classification: not found
+/usr/share/Modules/init/sh: line 2: unalias: convert_mnist_data: not found
+/usr/share/Modules/init/sh: line 2: unalias: upgrade_net_proto_text: not found
+/usr/share/Modules/init/sh: line 2: unalias: upgrade_net_proto_binary: not found
+/usr/share/Modules/init/sh: line 2: unalias: convert_cifar_data: not found
+/usr/share/Modules/init/sh: line 2: unalias: compute_image_mean: not found
+/usr/share/Modules/init/sh: line 2: unalias: upgrade_solver_proto_text: not found
+/usr/share/Modules/init/sh: line 2: unalias: net_speed_benchmark: not found
+/usr/share/Modules/init/sh: line 2: unalias: python: not found
+/usr/share/Modules/init/sh: line 2: unalias: convert_mnist_siamese_data: not found
+/usr/share/Modules/init/sh: line 2: unalias: tensorboard: not found
+/usr/share/Modules/init/sh: line 2: unalias: train_net: not found
+/usr/share/Modules/init/sh: line 2: unalias: caffe: not found
+/usr/share/Modules/init/sh: line 2: unalias: device_query: not found
+/usr/share/Modules/init/sh: line 2: unalias: test_net: not found
+/usr/share/Modules/init/sh: line 2: unalias: digits-devserver: not found
+/usr/share/Modules/init/sh: line 2: unalias: convert_imageset: not found
+ModuleCmd_Load.c(213):ERROR:105: Unable to locate a modulefile for 'gcc/4.4'
+mpich2/1.4(21):ERROR:151: Module 'mpich2/1.4' depends on one of the module(s) 'gcc/7.1.0 gcc/6.3.0 gcc/6.1.0 gcc/5.4.0 gcc/5.3.0 gcc/4.8.1'
+mpich2/1.4(21):ERROR:102: Tcl command execution failed: prereq intel gcc
+
+Hello world from task 0 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 1 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 2 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 3 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 4 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 5 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 6 of 8 on node0268.palmetto.clemson.edu
+Hello world from task 7 of 8 on node0268.palmetto.clemson.edu
+ 
+ 
++------------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES REQUESTED | 
++------------------------------------------+ 
+ 
+mem=2gb,ncpus=8,walltime=00:10:00
+ 
+ 
++-------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES USED | 
++-------------------------------------+ 
+ 
+cpupercent=0,cput=00:00:00,mem=0kb,ncpus=8,vmem=0kb,walltime=00:00:00
+ 
+ 
