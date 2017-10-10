@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <string.h>
 #include "MyMPI.h"
 
 
@@ -28,6 +29,7 @@ int get_size (MPI_Datatype t) {
    printf ("Error: Unrecognized argument to 'get_size'\n");
    fflush (stdout);
    MPI_Abort (MPI_COMM_WORLD, TYPE_ERROR);
+   return 0;
 }
 
 
@@ -325,7 +327,7 @@ void read_col_striped_matrix (
 {
    void      *buffer;        /* File buffer */
    int        datum_size;    /* Size of matrix element */
-   int        i, j;
+   int        i;
    int        id;            /* Process rank */
    FILE      *infileptr;     /* Input file ptr */
    int        local_cols;    /* Cols on this process */
@@ -718,7 +720,6 @@ void print_col_striped_matrix (
    int          n,       /* IN - Matrix cols */
    MPI_Comm     comm)    /* IN - Communicator */
 {
-   MPI_Status status;     /* Result of receive */
    int        datum_size; /* Bytes per matrix element */
    void      *buffer;     /* Enough room to hold 1 row */
    int        i, j;
