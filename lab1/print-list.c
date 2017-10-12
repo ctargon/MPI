@@ -10,7 +10,8 @@
 
 int main(int argc, char **argv)
 {
-	int i, opt, num, *vals;
+	int i, opt, num;
+	double *vals;
 	char *print_file = NULL;
 	FILE *fp = NULL;
 
@@ -44,12 +45,12 @@ int main(int argc, char **argv)
 	fread(&num, sizeof(int), 1, fp);
 	printf("%d\n", num);
 
-	vals = (int *) malloc (sizeof(int) * num);
-	fread(vals, sizeof(int), num, fp);
+	vals = (double *) malloc (sizeof(double) * num);
+	fread(vals, sizeof(double), num, fp);
 
 	for (i = 0; i < num; i++)
 	{
-		printf("%d\n", vals[i]);
+		printf("%f\n", vals[i]);
 	}
 
 	free(vals);

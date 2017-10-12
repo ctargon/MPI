@@ -11,7 +11,8 @@
 
 int main(int argc, char **argv)
 {
-	int opt, num = -1, *r_nums, i;
+	int opt, num = -1, i;
+	double *r_nums;
 	char *out_file = NULL;
 	FILE *fp = NULL;
 
@@ -47,16 +48,16 @@ int main(int argc, char **argv)
 		strcpy(out_file, "default-list-file.dat");
 	} 
 
-	r_nums = (int *) malloc (sizeof(int) * num);
+	r_nums = (double *) malloc (sizeof(double) * num);
 	
 	for (i = 0; i < num; i++)
 	{
-		r_nums[i] = rand() % 10000;
+		r_nums[i] = (double)rand() / RAND_MAX;
 	}
 
 	fp = fopen(out_file, "wb");
 	fwrite(&num, sizeof(int), 1, fp);
-	fwrite(r_nums, sizeof(int), num, fp);
+	fwrite(r_nums, sizeof(double), num, fp);
 	fclose(fp);
 
 	free(r_nums);

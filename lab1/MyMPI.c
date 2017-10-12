@@ -414,7 +414,6 @@ void read_row_striped_matrix (
    int          p;            /* Number of processes */
    void        *rptr;         /* Pointer into 'storage' */
    MPI_Status   status;       /* Result of receive */
-   int          x;            /* Result of read */
 
    MPI_Comm_size (comm, &p);
    MPI_Comm_rank (comm, &id);
@@ -459,12 +458,12 @@ void read_row_striped_matrix (
 
    if (id == (p-1)) {
       for (i = 0; i < p-1; i++) {
-         x = fread (*storage, datum_size,
+         fread (*storage, datum_size,
             BLOCK_SIZE(i,p,*m) * *n, infileptr);
          MPI_Send (*storage, BLOCK_SIZE(i,p,*m) * *n, dtype,
             i, DATA_MSG, comm);
       }
-      x = fread (*storage, datum_size, local_rows * *n,
+      fread (*storage, datum_size, local_rows * *n,
          infileptr);
       fclose (infileptr);
    } else
@@ -493,7 +492,6 @@ void read_block_vector (
    MPI_Status status;       /* Result of receive */
    int        id;           /* Process rank */
    int        p;            /* Number of processes */
-   int        x;            /* Result of read */
 
    datum_size = get_size (dtype);
    MPI_Comm_size(comm, &p);
@@ -525,12 +523,12 @@ void read_block_vector (
    *v = my_malloc (id, local_els * datum_size);
    if (id == (p-1)) {
       for (i = 0; i < p-1; i++) {
-         x = fread (*v, datum_size, BLOCK_SIZE(i,p,*n),
+         fread (*v, datum_size, BLOCK_SIZE(i,p,*n),
             infileptr);
          MPI_Send (*v, BLOCK_SIZE(i,p,*n), dtype, i, DATA_MSG,
             comm);
       }
-      x = fread (*v, datum_size, BLOCK_SIZE(id,p,*n),
+      fread (*v, datum_size, BLOCK_SIZE(id,p,*n),
              infileptr);
       fclose (infileptr);
    } else {
@@ -552,7 +550,6 @@ void read_replicated_vector (
    MPI_Comm     comm)   /* IN - Communicator */
 {
    int        datum_size; /* Bytes per vector element */
-   int        i;
    int        id;         /* Process rank */
    FILE      *infileptr;  /* Input file pointer */
    int        p;          /* Number of processes */
@@ -722,7 +719,7 @@ void print_col_striped_matrix (
 {
    int        datum_size; /* Bytes per matrix element */
    void      *buffer;     /* Enough room to hold 1 row */
-   int        i, j;
+   int        i;
    int        id;         /* Process rank */
    int        p;          /* Number of processes */
    int*       rec_count;  /* Elements received per proc */

@@ -10,7 +10,8 @@
 
 int main(int argc, char **argv)
 {
-	int i, opt, num, *vals, sum = 0;
+	int i, opt, num;
+	double *vals, sum = 0;
 	char *print_file = NULL;
 	FILE *fp = NULL;
 
@@ -42,15 +43,15 @@ int main(int argc, char **argv)
 	}
 
 	fread(&num, sizeof(int), 1, fp);
-	vals = (int *) malloc (sizeof(int) * num);
-	fread(vals, sizeof(int), num, fp);
+	vals = (double *) malloc (sizeof(double) * num);
+	fread(vals, sizeof(double), num, fp);
 
 	for (i = 0; i < num; i++)
 	{
 		sum += vals[i];
 	}
 
-	printf("%d\n", sum);
+	printf("%f\n", sum);
 
 	free(vals);
 	free(print_file);

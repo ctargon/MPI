@@ -9,14 +9,18 @@
 #include <string.h>
 #include <unistd.h>
 #include <mpi.h>
+#include "MyMPI.h"
 
 int IsPowerOfTwo(int x);
 
 int main(int argc, char **argv)
 {
-	int i, opt, num, *vals, sum = 0, size, rank;
-	char *print_file = NULL;
-	FILE *fp = NULL;
+	int i, opt, len = 0, size, rank;
+	double *vals, sum = 0, glob_sum = 0;
+	char *file = NULL;
+	void *inputs;
+	MPI_Status status;
+	//FILE *fp = NULL;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -29,46 +33,56 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-
 	while ((opt = getopt(argc, argv, "i:")) != -1)
 	{
 		switch (opt)
 		{
 			case 'i':
-				print_file = (char *) malloc (sizeof(char) * 100);
-				strcpy(print_file, optarg);
+				file = (char *) malloc (sizeof(char) * 100);
+				strcpy(file, optarg);
 				break;
 			case '?':
 				printf("Incorrect argument(s), exiting\n");
+				MPI_Finalize();
 				exit(1);
 		}
 	}
 
-	if (print_file == NULL)
+	if (file == NULL)
 	{
-		print_file = (char *) malloc (sizeof(char) * 100);
-		strcpy(print_file, "default-list-file.dat");
+		file = (char *) malloc (sizeof(char) * 100);
+		strcpy(file, "default-list-file.dat");
 	}
 
-	if ((fp = fopen(print_file, "rb")) == NULL)
+	read_block_vector(file, &inputs, MPI_DOUBLE, &len, MPI_COMM_WORLD);
+
+	if (rank == 0)
 	{
-		printf("Cannot open file %s for adding, exiting\n", print_file);
-		exit(1);
+		vals = (double *) inputs;
+		for (i = 0; i < BLOCK_SIZE(rank, size, len); i++)
+		{
+			glob_sum += vals[i];
+		}
+
+		for (i = 1; i < size; i++)
+		{
+			MPI_Recv(&sum, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+			glob_sum += sum;
+		}
+		printf("%f\n", glob_sum);
+	}
+	else
+	{
+		vals = (double *) inputs;
+
+		for (i = 0; i < BLOCK_SIZE(rank, size, len); i++)
+		{
+			sum += vals[i];
+		}	
+		MPI_Send(&sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 	}
 
-	fread(&num, sizeof(int), 1, fp);
-	vals = (int *) malloc (sizeof(int) * num);
-	fread(vals, sizeof(int), num, fp);
-
-	for (i = 0; i < num; i++)
-	{
-		sum += vals[i];
-	}
-
-	printf("%d\n", sum);
-
-	free(vals);
-	free(print_file);
+	//printf("process %d has sum of %f\n", rank, sum);
 
 	return 0;
 }

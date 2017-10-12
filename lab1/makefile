@@ -16,7 +16,7 @@ serial-add-list: serial-add-list.o
 	$(CC) $(LDFLAGS) -o serial-add-list serial-add-list.o 
 
 parallel-add-list: parallel-add-list.o MyMPI.o
-	$(MCC) $(LDFLAGS) -o parallel-add-list parallel-add-list.o
+	$(MCC) $(LDFLAGS) -o parallel-add-list parallel-add-list.o MyMPI.o
 
 make-list.o: make-list.c
 	$(CC) $(CFLAGS) -c make-list.c
