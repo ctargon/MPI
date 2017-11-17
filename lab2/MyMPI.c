@@ -621,12 +621,37 @@ void print_subvector (
       else {
          if (dtype == MPI_FLOAT)
             printf ("%6.3f ", ((float *)a)[i]);
-         else if (dtype == MPI_INT)
-            printf ("%6d ", ((int *)a)[i]);
+         else if (dtype == MPI_INT) {
+            if (((int *)a)[i] == 999999999) printf ("%6d ", -1);
+            else printf ("%6d ", ((int *)a)[i]);
+         }
+            
       }
    }
 }
 
+void write_subvector (
+   FILE        *file,
+   void        *a,       /* IN - Array pointer */
+   MPI_Datatype dtype,   /* IN - Array type */
+   int          n)       /* IN - Array size */
+{
+   int i;
+
+   for (i = 0; i < n; i++) {
+      if (dtype == MPI_DOUBLE)
+         fprintf (file, "%6.3f ", ((double *)a)[i]);
+      else {
+         if (dtype == MPI_FLOAT)
+            fprintf (file, "%6.3f ", ((float *)a)[i]);
+         else if (dtype == MPI_INT) {
+            //fprintf (file, "d", ((int *)a)[i]);
+            fwrite(&((int *)a)[i], sizeof(int), 1, file);
+         }
+            
+      }
+   }
+}
 
 /*
  *   Print a matrix distributed checkerboard fashion among
@@ -691,6 +716,78 @@ void print_checkerboard_matrix (
                }
             }
             print_subvector (buffer, dtype, n);
+            putchar ('\n');
+         } else if (grid_coords[0] == i) {
+            MPI_Send (a[j], local_cols, dtype, 0, 0,
+               grid_comm);
+         }
+      }
+   }
+   if (!grid_id) {
+      free (buffer);
+      putchar ('\n');
+   }
+}
+
+void write_checkerboard_matrix (
+   void       **a,            /* IN -2D matrix */
+   MPI_Datatype dtype,        /* IN -Matrix element type */
+   int          m,            /* IN -Matrix rows */
+   int          n,            /* IN -Matrix columns */
+   MPI_Comm     grid_comm,    /* IN - Communicator */
+   FILE        *file)    
+{
+   void      *buffer;         /* Room to hold 1 matrix row */
+   int        coords[2];      /* Grid coords of process
+                                 sending elements */
+   int        datum_size;     /* Bytes per matrix element */
+   int        els;            /* Elements received */
+   int        grid_coords[2]; /* Coords of this process */
+   int        grid_id;        /* Process rank in grid */
+   int        grid_period[2]; /* Wraparound */
+   int        grid_size[2];   /* Dims of process grid */
+   int        i, j, k;
+   void      *laddr;          /* Where to put subrow */
+   int        local_cols;     /* Matrix cols on this proc */
+   int        p;              /* Number of processes */
+   int        src;            /* ID of proc with subrow */
+   MPI_Status status;         /* Result of receive */
+
+   MPI_Comm_rank (grid_comm, &grid_id);
+   MPI_Comm_size (grid_comm, &p);
+   datum_size = get_size (dtype);
+
+   MPI_Cart_get (grid_comm, 2, grid_size, grid_period,
+      grid_coords);
+   local_cols = BLOCK_SIZE(grid_coords[1],grid_size[1],n);
+
+   if (!grid_id)
+      buffer = my_malloc (grid_id, n*datum_size);
+
+   /* For each row of the process grid */
+   for (i = 0; i < grid_size[0]; i++) {
+      coords[0] = i;
+
+      /* For each matrix row controlled by the process row */
+      for (j = 0; j < BLOCK_SIZE(i,grid_size[0],m); j++) {
+
+         /* Collect the matrix row on grid process 0 and
+            print it */
+         if (!grid_id) {
+            for (k = 0; k < grid_size[1]; k++) {
+               coords[1] = k;
+               MPI_Cart_rank (grid_comm, coords, &src);
+               els = BLOCK_SIZE(k,grid_size[1],n);
+               laddr = buffer +
+                  BLOCK_LOW(k,grid_size[1],n) * datum_size;
+               if (src == 0) {
+                  memcpy (laddr, a[j], els * datum_size);
+               } else {
+                  MPI_Recv(laddr, els, dtype, src, 0,
+                     grid_comm, &status);
+               }
+            }
+            write_subvector (file, buffer, dtype, n);
             putchar ('\n');
          } else if (grid_coords[0] == i) {
             MPI_Send (a[j], local_cols, dtype, 0, 0,

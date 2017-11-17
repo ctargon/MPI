@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	int num, k , i, j;
 	int **dist;
 	char *in_file = NULL, *out_file = NULL;
-	struct timespec	tp1, tp2, beg, end;
+	clock_t tp1, tp2, beg, end;
 
 	if (argc > 3) 
 	{
@@ -37,11 +37,11 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	clock_gettime(CLOCK_REALTIME, &beg);
+	beg = clock();
 
 	read_graph(in_file, &num, &dist);
 
-	clock_gettime(CLOCK_REALTIME, &tp1);
+	tp1 = clock();
 
 	for (k = 0; k < num; k++)
 	{
@@ -57,17 +57,17 @@ int main(int argc, char **argv)
 		}
 	}
 
-	clock_gettime(CLOCK_REALTIME,&tp2);
+	tp2 = clock();
 
 	write_graph(out_file, num, dist);
 
-	clock_gettime(CLOCK_REALTIME, &end);
+	end = clock();
 
 	printf("floyd-serial execution time:\n");
 	printf("\tn = %d nodes\n", num);
 	printf("\tp = 1 cpus\n");
-	printf("\tptime = %8f secs\n", (end.tv_nsec - beg.tv_nsec) / 1000000000.0);
-	printf("\tftime = %8f secs\n\n", (tp2.tv_nsec-tp1.tv_nsec) / 1000000000.0);
+	printf("\tptime = %8f secs\n", ((double)(end - beg)) / CLOCKS_PER_SEC);
+	printf("\tftime = %8f secs\n\n", ((double)(tp2 - tp1)) / CLOCKS_PER_SEC);
 
 	return 0;
 }

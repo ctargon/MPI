@@ -55,6 +55,8 @@ void read_replicated_vector (char *, void **, MPI_Datatype,
 
 void print_checkerboard_matrix (void **, MPI_Datatype, int,
         int, MPI_Comm);
+void write_checkerboard_matrix (void **, MPI_Datatype, int,
+        int, MPI_Comm, FILE *);
 void print_col_striped_matrix (void **, MPI_Datatype, int,
         int, MPI_Comm);
 void print_row_striped_matrix (void **, MPI_Datatype, int,
