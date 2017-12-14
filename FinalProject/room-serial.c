@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
 		// printf("u1 is %0.4f and exp is %0.4f\n", u1, exp((sum - new_sum) / (float)t));
 
-		if (new_sum < sum || u1 <= exp((sum - new_sum) / t))
+		if (new_sum < sum || u1 <= expf((sum - new_sum) / t))
 		{
 			swap = a[c1];
 			a[c1] = a[c2];

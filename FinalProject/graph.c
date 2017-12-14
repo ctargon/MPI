@@ -18,7 +18,7 @@ void read_graph(char *file_name, int *n, float ***A)
 	fread(&dim, sizeof(int), 1, fp);
 	*n = dim;
 
-	printf("Reading graph from file %s\n", file_name);
+	//printf("Reading graph from file %s\n", file_name);
 
 	storage = (float *) malloc (sizeof(float) * dim * dim);
 	fread(storage, sizeof(float), dim * dim, fp);

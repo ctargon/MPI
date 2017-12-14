@@ -1,23 +1,22 @@
 CFLAGS = -g -Wall -Wstrict-prototypes
-PROGS = make-graph print-graph room-serial
-# room-parallel
+PROGS = make-graph print-graph room-serial room-parallel
 LDFLAGS = -lm
 CC = gcc
-# MCC = mpicc
+MCC = mpicc
 
 all: $(PROGS)
 
 make-graph: make-graph.o graph.o
-	$(CC) $(LDFLAGS) -o make-graph make-graph.o graph.o
+	$(CC) -o make-graph make-graph.o graph.o $(LDFLAGS)
 
 print-graph: print-graph.o graph.o
-	$(CC) $(LDFLAGS) -o print-graph print-graph.o graph.o
+	$(CC) -o print-graph print-graph.o graph.o $(LDFLAGS)
 
 room-serial: room-serial.o graph.o
-	$(CC) $(LDFLAGS) -o room-serial room-serial.o graph.o 
+	$(CC) -o room-serial room-serial.o graph.o $(LDFLAGS)
 
-# floyd-parallel: floyd-parallel.o MyMPI.o
-# 	$(MCC) $(LDFLAGS) -o floyd-parallel floyd-parallel.o MyMPI.o
+room-parallel: room-parallel.o graph.o MyMPI.o
+	$(MCC) -o room-parallel room-parallel.o MyMPI.o graph.o $(LDFLAGS)
 
 make-graph.o: make-graph.c graph.h
 	$(CC) $(CFLAGS) -c make-graph.c
@@ -28,8 +27,8 @@ print-list.o: print-graph.c graph.h
 room-serial.o: room-serial.c graph.h
 	$(CC) $(CFLAGS) -c room-serial.c
 
-# room-parallel.o: room-parallel.c MyMPI.h
-# 	$(MCC) $(CFLAGS) -c room-parallel.c
+room-parallel.o: room-parallel.c graph.h MyMPI.h
+	$(MCC) $(CFLAGS) -c room-parallel.c
 
 graph.o: graph.c graph.h
 	$(CC) $(CFLAGS) -c graph.c

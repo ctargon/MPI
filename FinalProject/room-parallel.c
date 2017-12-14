@@ -10,92 +10,83 @@
 #include <unistd.h>
 #include <time.h>
 #include <mpi.h>
+#include <math.h>
+#include "graph.h"
 #include "MyMPI.h"
 
-void floyd (int ***subs, int *coords, int *dims, MPI_Comm row, MPI_Comm col, int nnodes);
+#define J 31
+#define K 63 
+
 int IsPowerOfTwo(int x);
+float roommate_assign(int num, float **dist, int **fib_list);
+int * random_assignment(int num, float **dist, int **fib_list);
+float get_sum (int *a, float **dist, int num);
 
 int main(int argc, char **argv)
 {
-	int rows, cols, size, rank, dim_size[2], periodic[2], grid_coords[2];
-	char *in_file = NULL, *out_file = NULL;
-	void **subs, *storage;
-	MPI_Comm cart_comm, r_comm, c_comm;
-	FILE *fp;
+	float **dist, cost, min;
+	int num, rank, size, i, *init_nums = (int *) malloc (sizeof(int) * K);
+	char *in_file = NULL;
 	//MPI_Status status;
-	clock_t tp1, tp2, beg, end;
+	//clock_t tp1, tp2, beg, end;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	// if (IsPowerOfTwo(size) == 0)
-	// {
-	// 	printf("Processor count must be 2, 4, 8, 16, or 32\n");
-	// 	MPI_Finalize();
-	// 	exit(1);
-	// }
-
-	if (argc == 3)
+	if (argc == 2)
 	{
 		in_file = (char *) malloc (sizeof(char) * 100);
 		strcpy(in_file, argv[1]);
-		out_file = (char *) malloc (sizeof(char) * 100);
-		strcpy(out_file, argv[2]);
 	}
 	else
 	{
-		printf("\nUsage: ./floyd-parallel input_file output_file\n");
+		printf("\nUsage: ./floyd-parallel input_file\n");
 		exit(1);
 	}
 
-	beg = clock();
+	//beg = clock();
 
-	dim_size[0] = dim_size[1] = 0;
-	MPI_Dims_create(size, 2, dim_size);
+	// read in the graph to each process
+	read_graph(in_file, &num, &dist);
 
-	periodic[0] = periodic[1] = 0;
-	MPI_Cart_create(MPI_COMM_WORLD, 2, dim_size, periodic, 1, &cart_comm);
+	//tp1 = clock();
 
-	MPI_Cart_coords(cart_comm, rank, 2, grid_coords);
+	srand(time(NULL) / (rank + 1));
 
-	//printf("%d (%d %d) (%d %d)\n", rank, grid_coords[0], grid_coords[1], dim_size[0], dim_size[1]);
+	for (i = 0; i < K; i++)
+		init_nums[i] = rand();
 
-	MPI_Comm_split(cart_comm, grid_coords[0], grid_coords[1], &r_comm);
-	MPI_Comm_split(cart_comm, grid_coords[1], grid_coords[0], &c_comm);
+	//MPI_Bcast(&init_nums, K, MPI_INT, 0, MPI_COMM_WORLD);
 
-	read_checkerboard_matrix(in_file, &subs, &storage, MPI_INT, &rows, &cols, cart_comm);
-	// debug print
-	//print_checkerboard_matrix(subs, MPI_INT, rows, cols, cart_comm);
+	cost = roommate_assign(num, dist, &init_nums);
 
-	int **mat = (int **)subs;
+	printf("rank %d has cost %f\n", rank, cost);
 
-	tp1 = clock();
-	floyd(&mat, grid_coords, dim_size, r_comm, c_comm, rows);
-	tp2 = clock();
-
-	// write header of file
-	fp = fopen(out_file, "wb");
-	fwrite(&rows, sizeof(int), 1, fp);
-	fwrite(&cols, sizeof(int), 1, fp);
-
-	subs = (void **)mat;
-
-	write_checkerboard_matrix(subs, MPI_INT, rows, cols, cart_comm, fp);
-	end = clock();
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Reduce(&cost, &min, 1, MPI_FLOAT, MPI_MIN, 0, MPI_COMM_WORLD);
 
 	if (rank == 0)
 	{
-		printf("floyd-serial execution time:\n");
-		printf("\tn = %d nodes\n", rows);
-		printf("\tp = %d cpus\n", size);
-		printf("\tptime = %8f secs\n", ((double)(end - beg)) / CLOCKS_PER_SEC);
-		printf("\tftime = %8f secs\n\n", ((double)(tp2 - tp1)) / CLOCKS_PER_SEC);
-
+		printf("minimum cost is: %f\n", min);
 	}
 
 
+	//tp2 = clock();
 
+
+
+	//end = clock();
+
+	// if (rank == 0)
+	// {
+	// 	printf("floyd-serial execution time:\n");
+	// 	printf("\tn = %d nodes\n", rows);
+	// 	printf("\tp = %d cpus\n", size);
+	// 	printf("\tptime = %8f secs\n", ((double)(end - beg)) / CLOCKS_PER_SEC);
+	// 	printf("\tftime = %8f secs\n\n", ((double)(tp2 - tp1)) / CLOCKS_PER_SEC);
+
+	// }
 
 	MPI_Finalize();
 	//printf("process %d has sum of %f\n", rank, sum);
@@ -103,52 +94,117 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-void floyd (int ***subs, int *coords, int *dims, MPI_Comm rowcom, MPI_Comm colcom, int nnodes)
+int LFG(int **fib_list)
 {
-	int k, i, j, local_r, local_c, r, c;
+	int i, out; 
 
-	int *buf_r = (int *) malloc (BLOCK_SIZE(coords[1], dims[1], nnodes) * sizeof(int));
-	int *buf_c = (int *) malloc (BLOCK_SIZE(coords[0], dims[0], nnodes) * sizeof(int));
-
-	for (k = 0; k < nnodes; k++)
+	for (i = 0; i < K; i++)
 	{
-		if (BLOCK_OWNER(k, dims[0], nnodes) == coords[0])
+		if (i < K - 1) 
 		{
-			local_r = k - BLOCK_LOW(coords[0], dims[0], nnodes);
-			//memcpy(buf_r, (*subs)[local_r], BLOCK_SIZE(coords[1], dims[1], nnodes) * sizeof(int));
-			for (r = 0; r < BLOCK_SIZE(coords[1], dims[1], nnodes); r++) buf_r[r] = (*subs)[local_r][r];
+			if (i == 0) out = (*fib_list)[J - 1] ^ (*fib_list)[K - 1];
+			(*fib_list)[i] = (*fib_list)[i + 1];
 		}
+		else (*fib_list)[i] = out;
+	}
 
-		//printf("owner is %d coord is %d\n", BLOCK_OWNER(k, dims[0], nnodes), coords[0]);
+	return out;
+}
 
-		if (BLOCK_OWNER(k, dims[1], nnodes) == coords[1])
+
+float roommate_assign(int num, float **dist, int **fib_list)
+{
+	int *a = random_assignment(num, dist, fib_list);
+
+	float t = 1, u1, u2, sum = get_sum(a, dist, num);
+
+	int c1, c2;
+	int c = 0;
+
+	while (c < 1000)
+	{
+		do 
 		{
-			local_c = k - BLOCK_LOW(coords[1], dims[1], nnodes);
+			u1 = ((float)LFG(fib_list) / (float)RAND_MAX);
+			u2 = ((float)LFG(fib_list) / (float)RAND_MAX);
+			if (u1 >= 1 || u2 >= 1) printf("uh oh\n");
+			c1 = u1 * num;
+			c2 = u2 * num;
+		} while (a[c1] == a[c2]);
 
-			//printf("block size is %d\n", BLOCK_SIZE(coords[0], dims[0], nnodes));
+		int swap, *temp_a = (int *) malloc (sizeof(int) * num);
+		memcpy(temp_a, a, sizeof(int) * num);
 
-			for (c = 0; c < BLOCK_SIZE(coords[0], dims[0], nnodes); c++) buf_c[c] = (*subs)[c][local_c];
+		swap = temp_a[c1];
+		temp_a[c1] = temp_a[c2];
+		temp_a[c2] = swap;
+
+		float new_sum = get_sum(temp_a, dist, num);
+
+		// printf("u1 is %0.4f and exp is %0.4f\n", u1, exp((sum - new_sum) / (float)t));
+
+		if (new_sum < sum || u1 <= exp((sum - new_sum) / t))
+		{
+			swap = a[c1];
+			a[c1] = a[c2];
+			a[c2] = swap;
+			c = 0;
+			sum = new_sum;
 		}
+		else c++;
 
-		//printf("Hello! from %d %d aka block owner %d\n", coords[0], coords[1], BLOCK_OWNER(k, dims[0], nnodes));
 
-		MPI_Bcast(buf_r, BLOCK_SIZE(coords[1], dims[1], nnodes), MPI_INT, BLOCK_OWNER(k, dims[0], nnodes), colcom);
+		t *= 0.999;
+	}
 
-		//printf("------------size %d----------------\n", BLOCK_SIZE(coords[0], dims[0], nnodes));
+	return sum;
+}
+	
 
-		MPI_Bcast(buf_c, BLOCK_SIZE(coords[0], dims[0], nnodes), MPI_INT, BLOCK_OWNER(k, dims[1], nnodes), rowcom);
+int * random_assignment(int num, float **dist, int **fib_list)
+{
+	int *a = (int *) calloc (sizeof(int), num);
+	int room, i, j, occur, flag;
 
-		//printf("------------swag %d----------------\n", BLOCK_SIZE(coords[0], dims[0], nnodes));
-
-		for (i = 0; i < BLOCK_SIZE(coords[0], dims[0], nnodes); i++)
+	for (i = 0; i < num; i++)
+	{
+		do 
 		{
-			for (j = 0; j < BLOCK_SIZE(coords[1], dims[1], nnodes); j++)
+			occur = flag = 0;
+			room = LFG(fib_list) % (num / 2);
+
+			for (j = 0; j < i; j++)
 			{
-				if (buf_r[j] + buf_c[i] < (*subs)[i][j]) (*subs)[i][j] = buf_r[j] + buf_c[i];
+				if (a[j] == room) occur++;
+				if (occur >= 2) 
+				{
+					flag = 1;
+					break;
+				}
 			}
+		} while (flag == 1);
+
+		a[i] = room;
+	}
+	return a;
+}
+
+float get_sum (int *a, float **dist, int num)
+{
+	int i, j;
+	float sum = 0;
+
+	for (i = 0; i < num; i++)
+	{
+		for (j = 0; j < num; j++)
+		{
+			if (a[i] == a[j]) sum += dist[i][j];
 		}
 	}
+
+	return sum;
 }
+
 
 int IsPowerOfTwo(int x)
 {
