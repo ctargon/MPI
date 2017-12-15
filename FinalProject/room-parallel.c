@@ -24,8 +24,8 @@ float get_sum (int *a, float **dist, int num);
 
 int main(int argc, char **argv)
 {
-	float **dist, cost, min;
-	int num, rank, size, i, *init_nums = (int *) malloc (sizeof(int) * K);
+	float **dist, cost, min, local_min;
+	int trials, num, rank, size, i, *init_nums = (int *) malloc (sizeof(int) * K);
 	char *in_file = NULL;
 	//MPI_Status status;
 	//clock_t tp1, tp2, beg, end;
@@ -34,10 +34,11 @@ int main(int argc, char **argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	if (argc == 2)
+	if (argc == 3)
 	{
 		in_file = (char *) malloc (sizeof(char) * 100);
 		strcpy(in_file, argv[1]);
+		trials = atoi(argv[2]);
 	}
 	else
 	{
@@ -58,13 +59,19 @@ int main(int argc, char **argv)
 		init_nums[i] = rand();
 
 	//MPI_Bcast(&init_nums, K, MPI_INT, 0, MPI_COMM_WORLD);
-
-	cost = roommate_assign(num, dist, &init_nums);
-
-	printf("rank %d has cost %f\n", rank, cost);
+	local_min = 999999.0;
+	for (i = 0; i < trials; i++)
+	{
+		cost = roommate_assign(num, dist, &init_nums);
+		if (cost < local_min) local_min = cost;
+	}
+	
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Reduce(&cost, &min, 1, MPI_FLOAT, MPI_MIN, 0, MPI_COMM_WORLD);
+
+	printf("rank %d has local minima %f\n", rank, local_min);
+
+	MPI_Reduce(&local_min, &min, 1, MPI_FLOAT, MPI_MIN, 0, MPI_COMM_WORLD);
 
 	if (rank == 0)
 	{
