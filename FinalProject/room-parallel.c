@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 	int trials, num, rank, size, i, *init_nums = (int *) malloc (sizeof(int) * K);
 	char *in_file = NULL;
 	//MPI_Status status;
-	//clock_t tp1, tp2, beg, end;
+	clock_t tp1, tp2;//, beg, end;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	// read in the graph to each process
 	read_graph(in_file, &num, &dist);
 
-	//tp1 = clock();
+	if (rank == 0) tp1 = clock();
 
 	srand(time(NULL) / (rank + 1));
 
@@ -73,13 +73,16 @@ int main(int argc, char **argv)
 
 	MPI_Reduce(&local_min, &min, 1, MPI_FLOAT, MPI_MIN, 0, MPI_COMM_WORLD);
 
+	if (rank == 0) tp2 = clock();
+
 	if (rank == 0)
 	{
 		printf("minimum cost is: %f\n", min);
+		printf("\tcompute time = %8f secs\n", ((double)(tp2 - tp1)) / CLOCKS_PER_SEC);
 	}
 
 
-	//tp2 = clock();
+	
 
 
 
